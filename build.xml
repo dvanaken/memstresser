@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="memstresser" basedir="." default="build">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="javac.target" value="1.8"/>
+    <property name="javac.source" value="1.8"/>
+
+    <!-- *************************************************** -->
+    <!--                   CONFIGURATION                     -->
+    <!-- *************************************************** -->
+    <property name="src.dir"                    location="src" />
+    <property name="lib.dir"                    location="lib" />
+    <property name="build.dir"                  location="build" />
+    <property name="dist.dir"                   location="dist" />
+
+    <path id='project.classpath'>
+        <pathelement location='${build.dir}' />
+        <fileset dir='${lib.dir}'>
+            <include name='*.jar' />
+        </fileset>
+        <pathelement path="${java.class.path}"/>
+    </path>
+    
+    <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+        <classpath>
+            <pathelement location="${lib.dir}/ant-contrib.jar"/>
+        </classpath>
+    </taskdef>
+    
+    <!-- EXEC ASSERTS -->
+    <condition property="assertions" value="true">
+        <not><isset property="assertions"/></not>
+    </condition>
+    <if>
+        <equals arg1="${assertions}" arg2="false" />
+        <then>
+            <assertions id="assertions"><disable /></assertions>
+        </then>
+        <else>
+            <assertions id="assertions"><enable /></assertions>
+        </else>
+    </if>
+
+
+    <!-- *************************************************** -->
+    <!--                     BUILDING                        -->
+    <!-- *************************************************** -->
+    <target name="build"
+            description="Builds the entire framework">
+        <fileset dir="${src.dir}" excludes="**/*.java"/>
+        
+	<mkdir dir="${build.dir}"/>
+        <javac debug="true" debuglevel="${debuglevel}" includeantruntime="false"
+               destdir="${build.dir}"
+               source="${javac.source}"
+               target="${javac.target}">
+            <src path="${src.dir}"/>
+            <classpath refid="project.classpath" />
+        </javac>
+    </target>
+
+    <target name="dist" depends="build"
+            description="Puts everything into a jar file" >
+        <mkdir dir="${dist.dir}"/>
+        <jar jarfile="${dist.dir}/memstresser.jar" basedir="${build.dir}" />
+    </target>
+
+    <target name="clean" description="Clean up generated files/dirs.">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+</project>

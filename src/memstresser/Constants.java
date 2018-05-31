@@ -7,6 +7,9 @@ public class Constants {
     // Default base directory for the result files
     public static final String DEFAULT_RESULT_DIRECTORY = "results";
     
+    // Default base directory for the result files
+    public static final String DEFAULT_RESULT_FILENAME = "memstresser.json";
+    
     // Default minimum amount of memory to stress in GB
     public static final int DEFAULT_MIN_MEM_GB = 1;
     

@@ -36,16 +36,22 @@ public class MemStresser {
                 "Base directory for the results, default is '" +
                 Constants.DEFAULT_RESULT_DIRECTORY + "'");
         options.addOption(
+                "f",
+                "filename",
+                true,
+                "Filename for the results, default is '" +
+                Constants.DEFAULT_RESULT_FILENAME + "'");
+        options.addOption(
                 null,
-                "minimum-memory",
+                "min-memory",
                 true,
                 "The minimum amount of memory to stress in GB, " +
                 "default is " + Constants.DEFAULT_MIN_MEM_GB + "GB");
         options.addOption(
                 null,
-                "maximum-memory",
+                "max-memory",
                 true,
-                "The maximum amount of memory to stress in GB, " +
+                "The maximum amount of memory used to stress in GB, " +
                 "default is " + Constants.DEFAULT_MAX_MEM_GB + "GB");
         
         // Parse the command line arguments
@@ -61,9 +67,10 @@ public class MemStresser {
         String configFile = argsLine.getOptionValue("c");
         DatabaseConfiguration config = DatabaseConfiguration.loadConfiguration(configFile);
         
-        int minMemoryGB = getOptionValue(argsLine, "minimum-memory", Constants.DEFAULT_MIN_MEM_GB);
-        int maxMemoryGB = getOptionValue(argsLine, "maximum-memory", Constants.DEFAULT_MAX_MEM_GB);
         String resultDirectory = getOptionValue(argsLine, "d", Constants.DEFAULT_RESULT_DIRECTORY);
+        String resultFilename = getOptionValue(argsLine, "f", Constants.DEFAULT_RESULT_FILENAME);
+        int minMemoryGB = getOptionValue(argsLine, "min-memory", Constants.DEFAULT_MIN_MEM_GB);
+        int maxMemoryGB = getOptionValue(argsLine, "max-memory", Constants.DEFAULT_MAX_MEM_GB);
         if (minMemoryGB < 1) {
             throw new RuntimeException("Minimum memory must be greater than 0 " +
                     "(value = " + minMemoryGB + ")");
@@ -79,6 +86,8 @@ public class MemStresser {
         initDebug.put("Configuration", configFile);
         initDebug.put("Database Type", "Postgres");
         initDebug.put("Database URL", config.getDBUrl());
+        initDebug.put("Database Username", config.getUsername());
+        initDebug.put("Database Password", config.getPassword());
         initDebug.put("Minimum Memory", minMemoryGB + "GB");
         initDebug.put("Maximum Memory", maxMemoryGB + "GB");
         LOG.info(Constants.SINGLE_LINE + "\n\n" + StringUtil.formatMaps(initDebug));
@@ -86,7 +95,7 @@ public class MemStresser {
         
         // Run the microbenchmark
         Microbenchmark bench = new Microbenchmark(config);
-        LOG.debug(String.format("Running microbenchmark: [minimum-memory=%dGB, maximum-memory=%dGB]",
+        LOG.debug(String.format("Running microbenchmark: [min-memory=%dGB, max-memory=%dGB]",
                 minMemoryGB, maxMemoryGB));
         int memoryGB = bench.run(minMemoryGB, maxMemoryGB);
         
@@ -97,7 +106,8 @@ public class MemStresser {
         // Save the results
         FileUtil.makeDirIfNotExists(resultDirectory);
         String resultPath = FileUtil.getNextFilename(FileUtil.joinPath(
-                resultDirectory, "memstresser.json"));
+                resultDirectory, resultFilename));
+        LOG.info("Saving results to " + resultPath);
         FileUtil.writeStringToFile(resultPath, results.toString());
     }
 

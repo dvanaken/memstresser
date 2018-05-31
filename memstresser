@@ -1,0 +1,8 @@
+#!/bin/bash
+classpath="build"
+for path in `ls lib/*.jar`; do
+    classpath+=":$path"
+done
+
+java -Xmx8G -cp $classpath -Dlog4j.configuration=log4j.properties memstresser.MemStresser $@
+
