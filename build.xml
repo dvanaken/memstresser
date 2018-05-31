@@ -62,7 +62,12 @@
     <target name="dist" depends="build"
             description="Puts everything into a jar file" >
         <mkdir dir="${dist.dir}"/>
-        <jar jarfile="${dist.dir}/memstresser.jar" basedir="${build.dir}" />
+        <jar jarfile="${dist.dir}/memstresser.jar" basedir="${build.dir}" >
+          <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" />
+          <manifest>
+            <attribute name="Main-Class" value="memstresser.MemStresser" />
+          </manifest>
+        </jar>
     </target>
 
     <target name="clean" description="Clean up generated files/dirs.">
