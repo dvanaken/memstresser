@@ -11,7 +11,10 @@ import org.apache.commons.collections15.map.ListOrderedMap;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+import com.google.gson.Gson;
+
 import memstresser.util.FileUtil;
+import memstresser.util.JSONUtil;
 import memstresser.util.StringUtil;
 
 public class MemStresser {
@@ -51,7 +54,7 @@ public class MemStresser {
                 "max-memory",
                 true,
                 "The maximum amount of memory used to stress in GB, " +
-                "default is " + Constants.DEFAULT_MAX_MEM_GB + "GB");
+                "default is " + Constants.DEFAULT_MAX_MEM_LIMIT_GB + "GB");
         
         // Parse the command line arguments
         CommandLine argsLine = parser.parse(options, args);
@@ -64,13 +67,12 @@ public class MemStresser {
             return;
         }
         String configFile = argsLine.getOptionValue("c");
-        DatabaseConfiguration config = new DatabaseConfiguration();
-        config.load(configFile);
+        DatabaseConfiguration config = JSONUtil.load(DatabaseConfiguration.class, configFile);
         
         String resultDirectory = getOptionValue(argsLine, "d", Constants.DEFAULT_RESULT_DIRECTORY);
         String resultFilename = getOptionValue(argsLine, "f", Constants.DEFAULT_RESULT_FILENAME);
         int minMemoryGB = getOptionValue(argsLine, "min-memory", Constants.DEFAULT_MIN_MEM_GB);
-        int maxMemoryGB = getOptionValue(argsLine, "max-memory", Constants.DEFAULT_MAX_MEM_GB);
+        int maxMemoryGB = getOptionValue(argsLine, "max-memory", Constants.DEFAULT_MAX_MEM_LIMIT_GB);
         if (minMemoryGB < 1) {
             throw new RuntimeException("Minimum memory must be greater than 0 " +
                     "(value = " + minMemoryGB + ")");
@@ -86,8 +88,7 @@ public class MemStresser {
         initDebug.put("Configuration", configFile);
         initDebug.put("Database Type", "Postgres");
         initDebug.put("Database URL", config.getDatabaseUrl());
-        initDebug.put("Database Username", config.getUsername());
-        initDebug.put("Database Password", config.getPassword());
+        initDebug.put("Database User", config.getUsername());
         initDebug.put("Minimum Memory", minMemoryGB + "GB");
         initDebug.put("Maximum Memory", maxMemoryGB + "GB");
         LOG.info(Constants.SINGLE_LINE + "\n\n" + StringUtil.formatMaps(initDebug));
@@ -97,14 +98,17 @@ public class MemStresser {
         Microbenchmark bench = new Microbenchmark(config);
         LOG.debug(String.format("Running microbenchmark: [min-memory=%dGB, max-memory=%dGB]",
                 minMemoryGB, maxMemoryGB));
-        MicrobenchmarkResult result = bench.run(minMemoryGB, maxMemoryGB);
+        bench.run(maxMemoryGB);
         
         // Save the results
         FileUtil.makeDirIfNotExists(resultDirectory);
         String resultPath = FileUtil.getNextFilename(FileUtil.joinPath(
                 resultDirectory, resultFilename));
         LOG.info("Saving results to " + resultPath);
-        result.save(resultPath);
+        JSONUtil.save(bench.getResult(), resultPath, true);
+        
+        // Cleanup
+        bench.tearDown();
     }
 
     private static void printUsage(Options options) {

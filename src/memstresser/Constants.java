@@ -14,7 +14,7 @@ public class Constants {
     public static final int DEFAULT_MIN_MEM_GB = 1;
     
     // Default maximum amount of memory to stress in GP
-    public static final int DEFAULT_MAX_MEM_GB = 64;
+    public static final int DEFAULT_MAX_MEM_LIMIT_GB = 256;
     
     // For pretty-printing benchmark output
     public static final String SINGLE_LINE = StringUtil.repeat("=", 70);

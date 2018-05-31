@@ -1,108 +1,87 @@
 package memstresser;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONStringer;
-
-import memstresser.util.JSONSerializable;
-import memstresser.util.JSONUtil;
-
-public class MicrobenchmarkResult implements JSONSerializable {
+public class MicrobenchmarkResult {// implements JSONSerializable {
 	
-	private final List<Long> runtimeMillis;
-	private int memoryGB;
-	private int minMemoryGB;
-	private int maxMemoryGB;
-	private boolean outOfMemory;
-
+	private final List<Long> executionTimesMillis = new LinkedList<Long>();
+	private final List<Integer> memoryGBs = new LinkedList<Integer>();
+	private final List<Boolean> allocationOutcomes = new LinkedList<Boolean>();
+	private long totalExecutionTimeMillis;
+	private int finalMemoryGB;
+	private int maxMemoryLimitGB;
+	private boolean memoryExhausted;
+	
 	public MicrobenchmarkResult() {
-		runtimeMillis = new LinkedList<Long>();
-		memoryGB = -1;
-		minMemoryGB = -1;
-		maxMemoryGB = -1;
-		outOfMemory = false;
+		clear();
 	}
 	
-	public void setMemoryGB(int memoryGB) {
-		this.memoryGB = memoryGB;
+	public void clear() {
+		totalExecutionTimeMillis = -1L;
+		maxMemoryLimitGB = -1;
+		finalMemoryGB = -1;
+		memoryExhausted = false;
 	}
 	
-	public int getMemoryGB() {
-		return memoryGB;
+	public void addExecutionTime(long timeMillis) {
+		executionTimesMillis.add(timeMillis);
 	}
 	
-	public void setMinMemoryGB(int minMemoryGB) {
-		this.minMemoryGB = minMemoryGB;
+	public List<Long> getExecutionTimes() {
+		return new LinkedList<Long>(executionTimesMillis);
 	}
 	
-	public int getMinMemoryGB() {
-		return minMemoryGB;
+	public void addMemoryGB(int memoryGB) {
+		memoryGBs.add(memoryGB);
 	}
 	
-	public void setOutOfMemory(boolean outOfMemory) {
-		this.outOfMemory = outOfMemory;
+	public List<Integer> getMemoryGBs() {
+		return new LinkedList<Integer>(memoryGBs);
 	}
 	
-	public boolean getOutOfMemory() {
-		return outOfMemory;
+	public void addAllocationOutcome(boolean success) {
+		allocationOutcomes.add(success);
 	}
 	
-	public void setMaxMemoryGB(int maxMemoryGB) {
-		this.maxMemoryGB = maxMemoryGB;
+	public List<Boolean> getAllocationOutcomes() {
+		return new LinkedList<Boolean>(allocationOutcomes);
 	}
 	
-	public int getMaxMemoryGB() {
-		return maxMemoryGB;
+	public void setTotalExecutionTime(long timeMillis) {
+		totalExecutionTimeMillis = timeMillis;
 	}
 	
-	public void addRuntimeMillis(Long time) {
-		runtimeMillis.add(time);
+	public long getTotalExecutionTime() {
+		return totalExecutionTimeMillis;
 	}
-
-	@Override
-	public String toJSONString() {
-		return JSONUtil.toJSONString(this);
+	
+	public void setMaxMemoryLimitGB(int maxMemoryLimitGB) {
+		this.maxMemoryLimitGB = maxMemoryLimitGB;
 	}
-
-	@Override
-	public void save(String outputPath) throws IOException {
-		JSONUtil.save(this, outputPath);
+	
+	public int getMaxMemoryLimitGB() {
+		return maxMemoryLimitGB;
 	}
-
-	@Override
-	public void load(String inputPath) throws IOException {
-		JSONUtil.load(this, inputPath);
+	
+	public void setFinalMemoryGB(int finalMemoryGB) {
+		this.finalMemoryGB = finalMemoryGB;
 	}
-
-	@Override
-	public void toJSON(JSONStringer stringer) throws JSONException {
-		stringer.key("memoryGB").value(getMemoryGB());
-		stringer.key("minMemoryGB").value(getMinMemoryGB());
-		stringer.key("maxMemoryGB").value(getMaxMemoryGB());
-		stringer.key("outOfMemory").value(getOutOfMemory());
-		stringer.key("runtimeMillis").array();
-		for (long time : runtimeMillis) {
-			stringer.value(time);
-		}
-		stringer.endArray();
+	
+	public int getFinalMemoryGB() {
+		return finalMemoryGB;
 	}
-
-	@Override
-	public void fromJSON(JSONObject jsonObject) throws JSONException {
-		setMemoryGB(jsonObject.getInt("memoryGB"));
-		setMinMemoryGB(jsonObject.getInt("minMemoryGB"));
-		setMaxMemoryGB(jsonObject.getInt("maxMemoryGB"));
-		setOutOfMemory(jsonObject.getBoolean("outOfMemory"));
-		runtimeMillis.clear();
-		JSONArray jsonArray = jsonObject.getJSONArray("runtimeMillis");
-		for (int i = 0; i < jsonArray.length(); ++i) {
-			addRuntimeMillis(jsonArray.getLong(i));
-		}
+	
+	public void setMemoryExhausted(boolean memoryExhausted) {
+		this.memoryExhausted = memoryExhausted;
+	}
+	
+	public boolean getMemoryExhausted() {
+		return memoryExhausted;
+	}
+	
+	public int getNumAllocations() {
+		return allocationOutcomes.size();
 	}
 
 }

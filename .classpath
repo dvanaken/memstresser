@@ -7,5 +7,6 @@
 	<classpathentry kind="lib" path="/home/dvanaken/git/memstresser/lib/json-20180130.jar"/>
 	<classpathentry kind="lib" path="/home/dvanaken/git/memstresser/lib/log4j-1.2.15.jar"/>
 	<classpathentry kind="lib" path="/home/dvanaken/git/memstresser/lib/postgresql-9.4.1209.jre6.jar"/>
+	<classpathentry kind="lib" path="/home/dvanaken/git/memstresser/lib/gson-2.8.5.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
