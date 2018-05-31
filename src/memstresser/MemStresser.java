@@ -10,7 +10,6 @@ import org.apache.commons.cli.PosixParser;
 import org.apache.commons.collections15.map.ListOrderedMap;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
-import org.json.JSONObject;
 
 import memstresser.util.FileUtil;
 import memstresser.util.StringUtil;
@@ -65,7 +64,8 @@ public class MemStresser {
             return;
         }
         String configFile = argsLine.getOptionValue("c");
-        DatabaseConfiguration config = DatabaseConfiguration.loadConfiguration(configFile);
+        DatabaseConfiguration config = new DatabaseConfiguration();
+        config.load(configFile);
         
         String resultDirectory = getOptionValue(argsLine, "d", Constants.DEFAULT_RESULT_DIRECTORY);
         String resultFilename = getOptionValue(argsLine, "f", Constants.DEFAULT_RESULT_FILENAME);
@@ -85,7 +85,7 @@ public class MemStresser {
         initDebug.put("Microbenchmark", "MEMORY STRESSER");
         initDebug.put("Configuration", configFile);
         initDebug.put("Database Type", "Postgres");
-        initDebug.put("Database URL", config.getDBUrl());
+        initDebug.put("Database URL", config.getDatabaseUrl());
         initDebug.put("Database Username", config.getUsername());
         initDebug.put("Database Password", config.getPassword());
         initDebug.put("Minimum Memory", minMemoryGB + "GB");
@@ -97,18 +97,14 @@ public class MemStresser {
         Microbenchmark bench = new Microbenchmark(config);
         LOG.debug(String.format("Running microbenchmark: [min-memory=%dGB, max-memory=%dGB]",
                 minMemoryGB, maxMemoryGB));
-        int memoryGB = bench.run(minMemoryGB, maxMemoryGB);
-        
-        // Process the results
-        JSONObject results = new JSONObject();
-        results.put("memory_gb", memoryGB);
+        MicrobenchmarkResult result = bench.run(minMemoryGB, maxMemoryGB);
         
         // Save the results
         FileUtil.makeDirIfNotExists(resultDirectory);
         String resultPath = FileUtil.getNextFilename(FileUtil.joinPath(
                 resultDirectory, resultFilename));
         LOG.info("Saving results to " + resultPath);
-        FileUtil.writeStringToFile(resultPath, results.toString());
+        result.save(resultPath);
     }
 
     private static void printUsage(Options options) {
