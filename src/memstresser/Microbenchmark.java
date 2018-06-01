@@ -12,38 +12,37 @@ import org.apache.log4j.Logger;
 import memstresser.util.StringUtil;
 
 public class Microbenchmark {
-	
+
     private static final Logger LOG = Logger.getLogger(Microbenchmark.class);
-    
+
     /* https://www.slideshare.net/AlexeyBashtanov/postgresql-and-ram-usage */
     private static final String MEM_BASE_QUERY = "with cte_1gb as (select " +
             "repeat('a', 1024*1024*1024 - 100) as a1gb) select count(*) from ";
-	
+
 	private final DatabaseConfiguration config;
 	private final Connection conn;
-	private final MicrobenchmarkResult2 result;
+	private final MicrobenchmarkResult result;
 
 	public Microbenchmark(DatabaseConfiguration config) throws SQLException {
 		this.config = config;
 		this.conn = makeConnection();
-		this.result = new MicrobenchmarkResult2();
+		this.result = new MicrobenchmarkResult();
 	}
-	
-	public MicrobenchmarkResult2 getResult() {
+
+	public MicrobenchmarkResult getResult() {
 		return result;
 	}
-	
+
 	public void run(int maxMemLimitGB) throws SQLException {
 		long startNanos = System.nanoTime();
 		result.clear();
 		result.setMaxMemoryLimitGB(maxMemLimitGB);
 		int minMemGB = 0;
-
 		int maxMemGB = 16;
 		if (maxMemGB > maxMemLimitGB) {
 			maxMemGB = maxMemLimitGB;
 		}
-		
+
 		// Incrementally search for an appropriate max memory
 		while (allocateMemory(maxMemGB)) {
 			if (maxMemGB == maxMemLimitGB) {
@@ -69,7 +68,7 @@ public class Microbenchmark {
 		Arrays.fill(hasMemArray, 0, minMemGB + 1, 1);
 		Arrays.fill(hasMemArray, minMemGB + 1, maxMemGB, 0);
 		hasMemArray[maxMemGB] = -1;
-		
+
 		// Do binary search on unknown region
 		int memoryGB = binarySearch(hasMemArray, minMemGB + 1, maxMemGB);
 		LOG.info("Final array: " + Arrays.toString(hasMemArray) + "\n");
@@ -80,13 +79,13 @@ public class Microbenchmark {
 		result.setFinalMemoryGB(memoryGB);
 		result.setMemoryExhausted(true);
 	}
-	
+
 	private void debug(int[] hasMemArray, int minMemGB, int maxMemGB) {
 		String sep = StringUtil.repeat("-", 40);
 		LOG.info(String.format("%s\n\nminMemGB = %d, maxMemGB = %d\nArr=%s\n\n%s",
 				sep, minMemGB, maxMemGB, Arrays.toString(hasMemArray), sep));
 	}
-	
+
 	public int binarySearch(int[] hasMemArray, int minMemGB, int maxMemGB) throws SQLException {
 		debug(hasMemArray, minMemGB, maxMemGB);
 		if (maxMemGB >= minMemGB) {
@@ -122,25 +121,10 @@ public class Microbenchmark {
 		// This should not happen
 		throw new RuntimeException("maxGB < minGB (" + maxMemGB + " < " + minMemGB + ")");
 	}
-	
+
 	public boolean allocateMemory(int memoryGB) throws SQLException {
-		int mem = 0;
-		boolean success;
-		if (memoryGB <= mem) {
-			success = true;
-		} else {
-			success = false;
-		}
-		result.addAllocationOutcome(success);
-		result.addExecutionTime(100L);
-		result.addMemoryGB(memoryGB);
-		LOG.info(String.format("Allocate %dGB: succeeded=%b", memoryGB, success));
-		return success;
-	}
-	
-	public boolean allocateMemory2(int memoryGB) throws SQLException {
 		LOG.info("Stressing " + memoryGB + "GB memory...");
-        
+
         // Build query
         StringBuilder sb = new StringBuilder(MEM_BASE_QUERY);
         int j;
@@ -148,7 +132,7 @@ public class Microbenchmark {
             sb.append("cte_1gb a" + j + ", ");
         }
         sb.append("cte_1gb a" + j);
-        
+
         // Execute query (see if it causes an OOM error)
         Statement s = conn.createStatement();
         boolean allocationSucceeded;
@@ -180,11 +164,26 @@ public class Microbenchmark {
         result.addMemoryGB(memoryGB);
         return allocationSucceeded;
 	}
-	
+
+	public boolean allocateMemory2(int memoryGB) throws SQLException {
+		int mem = 0;
+		boolean success;
+		if (memoryGB <= mem) {
+			success = true;
+		} else {
+			success = false;
+		}
+		result.addAllocationOutcome(success);
+		result.addExecutionTime(100L);
+		result.addMemoryGB(memoryGB);
+		LOG.info(String.format("Allocate %dGB: succeeded=%b", memoryGB, success));
+		return success;
+	}
+
 	private long elapsedMillis(long startNanos, long endNanos) {
 		return TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos);
 	}
-	
+
     public final Connection makeConnection() throws SQLException {
         Connection conn = DriverManager.getConnection(
                 config.getDatabaseUrl(),
@@ -192,8 +191,9 @@ public class Microbenchmark {
                 config.getPassword());
         return (conn);
     }
-    
+
     public void tearDown() throws SQLException {
     	conn.close();
     }
+
 }
