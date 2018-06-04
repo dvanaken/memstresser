@@ -37,7 +37,17 @@ public class Microbenchmark {
 		long startNanos = System.nanoTime();
 		result.clear();
 		result.setMaxMemoryLimitGB(maxMemLimitGB);
-		int minMemGB = 0;
+		int minMemGB = 1;
+
+        //   Check there's at least minMemGB memory available
+        if (!allocateMemory(minMemGB)) {
+            result.setTotalExecutionTime(elapsedMillis(startNanos, System.nanoTime()));
+            result.setFinalMemoryGB(minMemGB);
+            result.setMemoryExhausted(true);
+            LOG.warn("Less than " + minMemGB + "GB memory available!");
+            return;
+        }
+
 		int maxMemGB = 16;
 		if (maxMemGB > maxMemLimitGB) {
 			maxMemGB = maxMemLimitGB;
@@ -68,16 +78,18 @@ public class Microbenchmark {
 		Arrays.fill(hasMemArray, 0, minMemGB + 1, 1);
 		Arrays.fill(hasMemArray, minMemGB + 1, maxMemGB, 0);
 		hasMemArray[maxMemGB] = -1;
+		LOG.info("Start array: " + Arrays.toString(hasMemArray) + "\n");
 
 		// Do binary search on unknown region
 		int memoryGB = binarySearch(hasMemArray, minMemGB + 1, maxMemGB);
 		LOG.info("Final array: " + Arrays.toString(hasMemArray) + "\n");
-		LOG.info("Final memoryGB: " + memoryGB + ", total allocs: "
-				+ result.getNumAllocations());
 
 		result.setTotalExecutionTime(elapsedMillis(startNanos, System.nanoTime()));
 		result.setFinalMemoryGB(memoryGB);
 		result.setMemoryExhausted(true);
+		LOG.info(String.format("Final: [ memoryGB=%d, allocations=%d, runtime=%ds ]",
+		        result.getFinalMemoryGB(), result.getNumAllocations(),
+		        result.getTotalExecutionTime() / 1000));
 	}
 
 	private void debug(int[] hasMemArray, int minMemGB, int maxMemGB) {
@@ -166,7 +178,7 @@ public class Microbenchmark {
 	}
 
 	public boolean allocateMemory2(int memoryGB) throws SQLException {
-		int mem = 0;
+		int mem = 15;
 		boolean success;
 		if (memoryGB <= mem) {
 			success = true;
