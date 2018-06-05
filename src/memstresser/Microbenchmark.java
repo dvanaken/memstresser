@@ -1,7 +1,6 @@
 package memstresser;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
@@ -19,13 +18,11 @@ public class Microbenchmark {
     private static final String MEM_BASE_QUERY = "with cte_1gb as (select " +
             "repeat('a', 1024*1024*1024 - 100) as a1gb) select count(*) from ";
 
-	private final DatabaseConfiguration config;
 	private final Connection conn;
 	private final MicrobenchmarkResult result;
 
-	public Microbenchmark(DatabaseConfiguration config) throws SQLException {
-		this.config = config;
-		this.conn = makeConnection();
+	public Microbenchmark(DatabaseManager dbManager) throws SQLException {
+		this.conn = dbManager.makeConnection();
 		this.result = new MicrobenchmarkResult();
 	}
 
@@ -57,6 +54,9 @@ public class Microbenchmark {
 		while (allocateMemory(maxMemGB)) {
 			if (maxMemGB == maxMemLimitGB) {
 				// Give up if we're already at the max limit
+	            result.setTotalExecutionTime(elapsedMillis(startNanos, System.nanoTime()));
+	            result.setFinalMemoryGB(maxMemGB);
+	            result.setMemoryExhausted(false);
 				LOG.warn("We've hit the max memory limit and " +
 						"never ran out of memory! (Try " +
 						"increasing the max memory limit)");
@@ -195,14 +195,6 @@ public class Microbenchmark {
 	private long elapsedMillis(long startNanos, long endNanos) {
 		return TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos);
 	}
-
-    public final Connection makeConnection() throws SQLException {
-        Connection conn = DriverManager.getConnection(
-                config.getDatabaseUrl(),
-                config.getUsername(),
-                config.getPassword());
-        return (conn);
-    }
 
     public void tearDown() throws SQLException {
     	conn.close();

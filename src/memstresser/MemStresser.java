@@ -59,7 +59,7 @@ public class MemStresser {
             return;
         }
         String configFile = argsLine.getOptionValue("c");
-        DatabaseConfiguration config = JSONUtil.load(DatabaseConfiguration.class, configFile);
+        DatabaseManager dbManager = JSONUtil.load(DatabaseManager.class, configFile);
 
         String resultDirectory = getOptionValue(argsLine, "d", Constants.DEFAULT_RESULT_DIRECTORY);
         String resultFilename = getOptionValue(argsLine, "f", Constants.DEFAULT_RESULT_FILENAME);
@@ -73,15 +73,23 @@ public class MemStresser {
         initDebug.put("Microbenchmark", "MEMORY STRESSER");
         initDebug.put("Configuration", configFile);
         initDebug.put("Database Type", "Postgres");
-        initDebug.put("Database URL", config.getDatabaseUrl());
-        initDebug.put("Database User", config.getUsername());
+        initDebug.put("Database URL", dbManager.getDatabaseUrl());
+        initDebug.put("Database User", dbManager.getUsername());
         initDebug.put("Maximum Memory Limit", maxMemoryGB + "GB");
         LOG.info(Constants.SINGLE_LINE + "\n\n" + StringUtil.formatMaps(initDebug));
         LOG.info(Constants.SINGLE_LINE);
 
+        // Clear out any old statistics
+        PostgresCollector collector = new PostgresCollector(dbManager);
+        collector.clearStats();
+
         // Run the microbenchmark
-        Microbenchmark bench = new Microbenchmark(config);
+        Microbenchmark bench = new Microbenchmark(dbManager);
         bench.run(maxMemoryGB);
+        MicrobenchmarkResult result = bench.getResult();
+        
+        // Collect DBMS internal metrics
+        result.setDBMetrics(collector.collectMetrics());
 
         // Save the results
         FileUtil.makeDirIfNotExists(resultDirectory);

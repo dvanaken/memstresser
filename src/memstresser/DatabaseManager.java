@@ -1,6 +1,10 @@
 package memstresser;
 
-public class DatabaseConfiguration {
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class DatabaseManager {
 
     private String databaseUrl;
     private String username;
@@ -28,6 +32,10 @@ public class DatabaseConfiguration {
 
     public void setPassword(String password) {
     	this.password = password;
+    }
+
+    public final Connection makeConnection() throws SQLException {
+        return DriverManager.getConnection(databaseUrl, username, password);
     }
 
 }

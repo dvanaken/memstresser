@@ -2,12 +2,14 @@ package memstresser;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class MicrobenchmarkResult {
 
 	private final List<Long> executionTimesMillis = new LinkedList<Long>();
 	private final List<Integer> memoryGBs = new LinkedList<Integer>();
 	private final List<Boolean> allocationOutcomes = new LinkedList<Boolean>();
+	private Map<String, List<List<String>>> dbMetrics;
 	private long totalExecutionTimeMillis;
 	private int finalMemoryGB;
 	private int maxMemoryLimitGB;
@@ -22,6 +24,7 @@ public class MicrobenchmarkResult {
 		maxMemoryLimitGB = -1;
 		finalMemoryGB = -1;
 		memoryExhausted = false;
+		dbMetrics = null;
 	}
 
 	public void addExecutionTime(long timeMillis) {
@@ -82,6 +85,14 @@ public class MicrobenchmarkResult {
 
 	public int getNumAllocations() {
 		return allocationOutcomes.size();
+	}
+	
+	public void setDBMetrics(Map<String, List<List<String>>> dbMetrics) {
+	    this.dbMetrics = dbMetrics;
+	}
+	
+	public Map<String, List<List<String>>> getDBMetrics() {
+	    return dbMetrics;
 	}
 
 }
